@@ -1,31 +1,33 @@
 
 source("Utils.R")
 
-fx <- function(x)
+fx <- function(i, x)
 {
-  return(x + 1 / (x + 1))
+  return (sin(i / 8))
 }
 
-fu <- function(u)
-{
-  return (0)
-}
-
-fw <- function(w)
+fu <- function(i, u)
 {
   return (0)
 }
 
-fv <- function(v)
+fw <- function(i, w)
 {
   return (0)
 }
 
-n <- 10
-x0 <- 1
+fv <- function(i, v)
+{
+  return (0)
+}
+
+n <- 50
+x0 <- 0
 u0 <- 0
 
-x_est <- 0
+x0_est <- 0
+
+x_est <- x0_est
 p_est <- 1
 
 A <- matrix(1, 1, 1)
@@ -43,25 +45,29 @@ Q <- 0.1
 
 #initial data
 
+#create vector x0 with fx
+vec_x0 <- c(fx(0, x0))
+lapply(2:n, function(i){vec_x0[i] <<- fx(i - 1, vec_x0[i-1])})
+
 #create vector x with fx
-vec_x <- c(x0)
-lapply(2:n, function(i){vec_x[i] <<- fx(vec_x[i-1])})
+vec_x <- c(fx(1, fx(0, x0)))
+lapply(2:n, function(i){vec_x[i] <<- fx(i, vec_x[i-1])})
 
 #create vector xn real with fx
-vec_xn_real <- c(fx(x0))
-lapply(2:n, function(i){vec_xn_real[i] <<- fx(vec_xn_real[i-1])})
+vec_xn_real <- c(fx(2, fx(1, fx(0, x0))))
+lapply(2:n, function(i){vec_xn_real[i] <<- fx(i + 1, vec_xn_real[i-1])})
 
 #create vector u with fu
-vec_u <- c(u0)
-lapply(2:n, function(i){vec_u[i] <<- fu(vec_u[i-1])})
+vec_u <- c(fu(0, u0))
+lapply(2:n, function(i){vec_u[i] <<- fu(i - 1, vec_u[i-1])})
 
 #create vector mean x
 vec_mean_x <- c()
-lapply(1:n, function(i){vec_mean_x[i] <<- mean(vec_x[1:i])})
+lapply(1:n, function(i){vec_mean_x[i] <<- mean(c(x0, vec_x[1:i]))})
 
 #create vector standard deviation x
 vec_stddev_x <- c()
-lapply(1:n, function(i){vec_stddev_x[i] <<- sd(vec_x[1:i])})
+lapply(1:n, function(i){vec_stddev_x[i] <<- sd(c(x0, vec_x[1:i]))})
 
 #create vector gaussian.noise x
 vec_g_noise_x <- c()
@@ -85,11 +91,11 @@ for (i in 1:n)
   p = p_est
   
   #calc xn = A*x + B*u + w
-  xn = A * x + B * vec_u[i] + fw(vec_g_noise_x[i])
+  xn = A * x + B * vec_u[i] + fw(i, vec_g_noise_x[i])
   vec_xn[i] <- xn
   
   #calc y = H*x + v
-  y = H * x + fv(vec_g_noise_x[i])
+  y = H * x + fv(i, vec_g_noise_x[i])
   vec_y[i] <- y
   
   #calc pn = (A * P * AT) + Q
@@ -120,6 +126,7 @@ for (i in 1:n)
 
 #view data frame
 df <- data.frame(
+  x0 = vec_x0,
   x = vec_x,
   xn.real = vec_xn_real,
   u = vec_u,
@@ -138,3 +145,10 @@ df <- data.frame(
 )
 
 print(df)
+
+plot(x <- 0:n, y <- c(x0, vec_x), "l", col="blue", xlab = "t", ylab = "x")
+
+points(x, y, cex = .5, col = "dark blue")
+
+lines(x <- 0:n, y <- c(x0_est ,vec_x_est), "l", col="green")
+points(x, y, cex = .5, col = "dark green")
