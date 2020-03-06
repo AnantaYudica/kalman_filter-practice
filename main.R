@@ -8,22 +8,22 @@ fx <- function(i, x)
 
 fu <- function(i, u)
 {
-  return (0)
+  return (sin(i / 8))
 }
 
 fw <- function(i, w)
 {
-  return (0)
+  return (0.1)
 }
 
 fv <- function(i, v)
 {
-  return (0)
+  return (-0.05)
 }
 
 fnoise <- function(v)
 {
-  return(v - (runif(1, 0, 0.2) - 0.1))
+  return(v - (runif(1, 0, 2) - 1))
 }
 
 n <- 50
@@ -36,10 +36,10 @@ p0_est <- 1
 x_est <- x0_est
 p_est <- p0_est
 
-A <- matrix(1, 1, 1)
+A <- matrix(.55, 1, 1)
 AT <- t(A)
 
-B <- matrix(1, 1, 1)
+B <- matrix(.5, 1, 1)
 
 H <- matrix(1, 1, 1)
 HT <- t(H)
@@ -68,8 +68,8 @@ vec_xn_real <- c(fx(2, fx(1, fx(0, x0))))
 lapply(2:n, function(i){vec_xn_real[i] <<- fx(i + 1, vec_xn_real[i-1])})
 
 #create vector u with fu
-vec_u <- c(fu(0, u0))
-lapply(2:n, function(i){vec_u[i] <<- fu(i - 1, vec_u[i-1])})
+vec_u <- c(fu(1, u0))
+lapply(2:n, function(i){vec_u[i] <<- fu(i, vec_u[i-1])})
 
 #create vector mean x
 vec_mean_x <- c()
@@ -152,7 +152,43 @@ df <- data.frame(
 
 print(df)
 
-plot(x <- 0:n, y <- c(x0, vec_x), "l", col="blue", xlab = "t", ylab = "x")
-points(x, y, cex = .5, col = "dark blue", p = 2)
-lines(x <- 0:n, y <- c(x0_est ,vec_x_est), "l", col="green")
-points(x, y, cex = .5, col = "dark green")
+plot1_y_min = min(vec_x, vec_u, vec_x_est) * 1.5
+plot1_y_max = max(vec_x, vec_u, vec_x_est) * 1.5
+
+plot(seq(0, n, length = 20), 
+     seq(plot1_y_min, plot1_y_max, length = 20), 
+     type = "n", xlab = "t", ylab = "x")
+points(x <- 0:n, y <- c(x0, vec_x), cex = .5, col = "dark blue", p = 2)
+points(x <- 0:n, y <- c(u0 ,vec_u), cex = .5, col = "red", p = 6)
+lines(x <- 0:n, y <- c(x0_est ,vec_x_est), "l", col="green", lwd = 2)
+
+legend("topright", 
+       legend = c("x", "u", expression(widehat("x"))), 
+       lty = c(0, 0, 1),pch = c(2, 6, NA),
+       col = c("dark blue", "red", "green"),
+       cex = c(0.75, 0.75, 0.75),
+       lwd = c(1, 1, 2))
+
+hist_min = min(vec_x, vec_u, vec_x_est) * 2
+hist_max = max(vec_x, vec_u, vec_x_est) * 2
+hist_seq = seq(hist_min, hist_max, length = n)
+vec_x_dnorm = dnorm(hist_seq, mean(vec_x), sd(vec_x))
+vec_u_dnorm = dnorm(hist_seq, mean(vec_u), sd(vec_u))
+vec_x_est_dnorm = dnorm(hist_seq, mean(vec_x_est), sd(vec_x_est))
+hist_top = max (vec_x_dnorm, vec_u_dnorm, vec_x_est_dnorm) * 1.125
+
+plot(seq(hist_min, hist_max, length = 20), 
+     seq(0, hist_top, length = 20), 
+     type = "n", xlab = "x", ylab = "y")
+
+lines(hist_seq, vec_x_dnorm, "l", col="dark blue", lwd = 2)
+lines(hist_seq, vec_u_dnorm, "l", col = "red", lwd = 2)
+lines(hist_seq, vec_x_est_dnorm, "l", col="green", lwd = 2)
+lines(hist_seq, dnorm(hist_seq, mean(vec_y), sd(vec_y)), "l", col="yellow", lwd = 2)
+
+legend("topright", 
+       legend = c("x", "u", expression(widehat("x"), y)), 
+       lty = c(1, 1, 1, 1),pch = c(NA, NA, NA),
+       col = c("dark blue", "red", "green", "yellow"),
+       cex = c(0.75, 0.75, 0.75, 0.75),
+       lwd = c(2, 2, 2, 2))
